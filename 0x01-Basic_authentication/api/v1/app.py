@@ -8,17 +8,19 @@ from flask import Flask, jsonify, abort, request
 from flask_cors import (CORS, cross_origin)
 import os
 from api.v1.auth.auth import Auth
+from api.v1.auth.basic_auth import BasicAuth
 
 
 app = Flask(__name__)
 app.register_blueprint(app_views)
 CORS(app, resources={r"/api/v1/*": {"origins": "*"}})
 auth = None
+AUTH_TYPE = getenv("AUTH_TYPE")
 
-if getenv("AUTH_TYPE") == "auth":
+if AUTH_TYPE == "auth":
     auth = Auth()
-# elif getenv("AUTH_TYPE") == "basic_auth":
-#     auth = BasicAuth()
+elif AUTH_TYPE == "basic_auth":
+    auth = BasicAuth()
 
 
 @app.errorhandler(404)
@@ -41,12 +43,15 @@ def forbidden(error) -> str:
 
 
 @app.before_request
-def filter_auth():
+def before_request() -> str:
     """Filtering of the authentication method"""
-    authorized_list = ['/api/v1/status',
-                       '/api/v1/unauthorized/', '/api/v1/forbidden']
+    if auth is None:
+        return
 
-    if auth and auth.require_auth(request.path, authorized_list):
+    excluded_path = ['/api/v1/status/',
+                       '/api/v1/unauthorized/', '/api/v1/forbidden/']
+
+    if auth and auth.require_auth(request.path, excluded_path):
         if not auth.authorization_header(request):
             abort(401)
         if not auth.current_user(request):
