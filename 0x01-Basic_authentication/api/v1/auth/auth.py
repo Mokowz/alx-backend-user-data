@@ -7,6 +7,7 @@ from typing import TypeVar, List
 class Auth:
     """Authentication class"""
     def require_auth(self, path: str, excluded_paths: List[str]) -> bool:
+        """Require Auth Method"""
         return False
     
     def authorization_header(self, request=None) -> str:
